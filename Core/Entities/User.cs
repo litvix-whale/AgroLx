@@ -9,4 +9,6 @@ public class User : IdentityUser<Guid>
     public string ProfilePicture { get; set; } = "pfp_1.png";
     
     public virtual  Cart Cart { get; set; } = null!;
+    
+    public virtual ICollection<Product> Products { get; set; } = null!;
 }
