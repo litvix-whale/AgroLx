@@ -5,6 +5,8 @@ namespace Core.Entities;
 public class User : IdentityUser<Guid>
 {
     public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     public string ProfilePicture { get; set; } = "pfp_1.png";
-    public virtual ICollection<Product> RealEstates { get; set; } = new List<Product>();
+    
+    public virtual  Cart Cart { get; set; } = null!;
 }
