@@ -5,6 +5,12 @@ namespace Core.Entities;
 public class User : IdentityUser<Guid>
 {
     public DateTime CreatedAt { get; set; }
-    public string ProfilePicture { get; set; } = "pfp_1.png";
-    public virtual ICollection<Product> RealEstates { get; set; } = new List<Product>();
+    public DateTime? UpdatedAt { get; set; }
+    public string ProfilePicture { get; set; }
+    
+    public virtual  Cart Cart { get; set; } = null!;
+    
+    public virtual ICollection<Product> Products { get; set; } = null!;
+    
+    public virtual ICollection<Order> Orders { get; set; } = null!;
 }
