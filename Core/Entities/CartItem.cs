@@ -9,4 +9,6 @@ public class CartItem: EntityBase<int>
     public virtual Product Product { get; set; } = null!;
     
     public int Quantity { get; set; }
+    
+    // additionaly (color, garanty, etc.)
 }
