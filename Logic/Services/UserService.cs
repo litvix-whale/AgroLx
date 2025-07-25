@@ -12,9 +12,9 @@ namespace Logic.Services
         private readonly SignInManager<User> _signInManager = signInManager;
         private readonly UserManager<User> _userManager = userManager;
 
-        public async Task<string> RegisterUserAsync(string email, string userName, string password, bool rememberMe)
+        public async Task<string> RegisterUserAsync(string email, string username, string password, bool rememberMe)
         {
-            var user = new User { UserName = userName, Email = email };
+            var user = new User { UserName = username, Email = email };
             var result = await userRepository.AddAsync(user, password);
             if (result.Succeeded)
             {
@@ -26,7 +26,7 @@ namespace Logic.Services
 
         public async Task<string> LoginUserAsync(string email, string password, bool rememberMe)
         {
-            var user = await userRepository.GetByEmailAsync(email) ?? await userRepository.GetByUserNameAsync(email);
+            var user = await userRepository.GetByEmailAsync(email) ?? await userRepository.GetByUsernameAsync(email);
             if (user == null)
             {
                 return "User not found.";
@@ -72,7 +72,7 @@ namespace Logic.Services
         public async Task<IEnumerable<User>> GetUsersByRoleAsync(string role, string? searchTerm = null,
             string? statusFilter = null, string? sortOrder = null, int? skip = null, int? take = null)
         {
-            return await userRepository.GetUsersByRoleAsync(role, searchTerm, statusFilter, sortOrder, skip, take);
+            return await userRepository.GetByRoleAsync(role, searchTerm, statusFilter, sortOrder, skip, take);
         }
 
         public async Task<int> GetUsersCountByRoleAsync(string role, string? searchTerm = null, string? statusFilter = null)
@@ -94,9 +94,9 @@ namespace Logic.Services
             return await userRepository.GetByEmailAsync(email) ?? throw new InvalidOperationException("User not found.");
         }
 
-        public async Task<User> GetUserByUserNameAsync(string userName)
+        public async Task<User> GetUserByUsernameAsync(string userName)
         {
-            return await userRepository.GetByUserNameAsync(userName) ?? throw new InvalidOperationException("User not found.");
+            return await userRepository.GetByUsernameAsync(userName) ?? throw new InvalidOperationException("User not found.");
         }
 
         public async Task AddClaimsAsync(User user, IEnumerable<Claim> claims)
@@ -152,7 +152,7 @@ namespace Logic.Services
             return user!;
         }
 
-        public async Task<string> GetUserName(User user)
+        public async Task<string> GetUsername(User user)
         {
             return await _userManager.GetUserNameAsync(user) ?? throw new InvalidOperationException("User not found.");
         }
@@ -234,9 +234,9 @@ namespace Logic.Services
             return string.Join(", ", result.Errors.Select(e => e.Description));
         }
 
-        public async Task<string> GetUserIdByName(string userName)
+        public async Task<string> GetUserIdByUsername(string userName)
         {
-            var user = await userRepository.GetByUserNameAsync(userName);
+            var user = await userRepository.GetByUsernameAsync(userName);
             if (user == null)
             {
                 return "User not found.";
@@ -246,7 +246,7 @@ namespace Logic.Services
 
         public async Task<bool> IsUserAdmin(string userName)
         {
-            var user = await userRepository.GetByUserNameAsync(userName);
+            var user = await userRepository.GetByUsernameAsync(userName);
             if (user == null)
             {
                 return false;

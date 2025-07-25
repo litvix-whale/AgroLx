@@ -1,10 +1,12 @@
 namespace Core.Interfaces;
 
-public interface IRepository<T> where T : class
+public interface IRepository<TEntity, in TId> 
+    where TEntity : class 
+    where TId : struct
 {
-    Task<IEnumerable<T>> GetAllAsync();
-    Task<T?> GetByIdAsync(Guid id);
-    Task AddAsync(T entity);
-    Task UpdateAsync(T entity);
-    Task DeleteAsync(Guid id);
+    Task<IEnumerable<TEntity>> GetAllAsync();
+    Task<TEntity?> GetByIdAsync(TId id);
+    Task AddAsync(TEntity entity);
+    Task UpdateAsync(TEntity entity);
+    Task DeleteAsync(TId id);
 }

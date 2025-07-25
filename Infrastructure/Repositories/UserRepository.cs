@@ -41,12 +41,12 @@ public class UserRepository(AppDbContext context, UserManager<User> userManager)
         return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
     }
 
-    public async Task<User?> GetByUserNameAsync(string userName)
+    public async Task<User?> GetByUsernameAsync(string userName)
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
     }
 
-    public async Task<IEnumerable<User>> GetUsersByRoleAsync(string role, string? searchTerm = null,
+    public async Task<IEnumerable<User>> GetByRoleAsync(string role, string? searchTerm = null,
                 string? statusFilter = null, string? sortOrder = null, int? skip = null, int? take = null)
     {
         var usersInRole = await _userManager.GetUsersInRoleAsync(role);
