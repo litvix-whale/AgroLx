@@ -137,7 +137,7 @@ namespace MVC.Controllers
         [Authorize]
         public async Task<IActionResult> Profile()
         {
-            var user = await _userService.GetUserByUserNameAsync(User.Identity?.Name!);
+            var user = await _userService.GetUserByUsernameAsync(User.Identity?.Name!);
             
             var model = new ProfileViewModel 
             { 
@@ -166,7 +166,7 @@ namespace MVC.Controllers
                 return View("Profile", model);
             }
 
-            var user = await _userService.GetUserByUserNameAsync(username);
+            var user = await _userService.GetUserByUsernameAsync(username);
             if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "User not found");
@@ -179,7 +179,7 @@ namespace MVC.Controllers
             if (result == "Success")
             {
                 // Refresh model with updated data
-                user = await _userService.GetUserByUserNameAsync(username);
+                user = await _userService.GetUserByUsernameAsync(username);
                 model.UserName = user.UserName;
                 model.ProfilePicture = user.ProfilePicture;
                 
