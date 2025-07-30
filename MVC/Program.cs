@@ -3,33 +3,29 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Infrastructure.Data;
 using Core.Entities;
-using Core.Interfaces;
+using Core.Interfaces.Repositories;
+using Core.Interfaces.Services;
 using Logic.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Infrastructure.Repositories;
-using Logic.Hubs;
 using Infrastructure.Seed;
-using Infrastructure.Xml.Interfaces;
-using Infrastructure.Xml.Services;
-using Infrastructure.Xml.Configs;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Завантаження .env тільки в Development
 if (builder.Environment.IsDevelopment())
 {
     Env.Load();
 }
 
-// Конфігурація Google Maps API
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ Google Maps API
 builder.Configuration["GoogleMaps:ApiKey"] =
     Environment.GetEnvironmentVariable("GOOGLE_MAPS_API_KEY") ??
     builder.Configuration["GoogleMaps:ApiKey"];
 
 builder.Services.AddControllersWithViews();
 
-// Database конфігурація
+// Database пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     var connectionString = builder.Environment.IsDevelopment()
@@ -39,18 +35,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
     options.UseNpgsql(connectionString);
 
-    // Відключення sensitive logging в Production
+    // ВіпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ sensitive logging пїЅ Production
     if (builder.Environment.IsProduction())
     {
         options.EnableSensitiveDataLogging(false);
     }
-});
-
-// XML Settings
-builder.Services.Configure<XmlDataSettings>(options =>
-{
-    builder.Configuration.GetSection(XmlDataSettings.SectionName).Bind(options);
-    options.FeedUrl = Environment.GetEnvironmentVariable("XML_FEED_URL") ?? options.FeedUrl;
 });
 
 // Identity
@@ -66,7 +55,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
-// Cookie конфігурація
+// Cookie пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
@@ -75,7 +64,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.SlidingExpiration = true;
 
-    // Secure cookies в Production
+    // Secure cookies пїЅ Production
     if (builder.Environment.IsProduction())
     {
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
@@ -88,10 +77,10 @@ builder.Services.AddSignalR();
 // Dependency Injection
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IRealEstateRepository, RealEstateRepository>();
-builder.Services.AddScoped<IRealEstateImageRepository, RealEstateImageRepository>();
-builder.Services.AddScoped<IRealEstateService, RealEstateService>();
-builder.Services.AddScoped<IRealEstateImageService, RealEstateImageService>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IProductImageService, ProductImageService>();
 builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 
 builder.Services.AddHttpClient<IXmlDataService, XmlDataService>();
@@ -107,7 +96,7 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Database ініціалізація
+// Database пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -117,7 +106,7 @@ using (var scope = app.Services.CreateScope())
     {
         var dbContext = services.GetRequiredService<AppDbContext>();
 
-        // Міграція БД
+        // МіпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ
         if (app.Environment.IsProduction())
         {
             logger.LogInformation("Running database migrations...");
@@ -128,7 +117,7 @@ using (var scope = app.Services.CreateScope())
             dbContext.Database.Migrate();
         }
 
-        // Seeding даних
+        // Seeding пїЅпїЅпїЅпїЅпїЅ
         var userManager = services.GetRequiredService<UserManager<User>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
         var xmlDataService = services.GetRequiredService<IXmlDataService>();
@@ -168,6 +157,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=RealEstate}/{action=Index}");
+    pattern: "{controller=Product}/{action=Index}");
 
 app.Run();

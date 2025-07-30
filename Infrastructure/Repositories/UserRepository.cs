@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Core.Entities;
-using Core.Interfaces;
+using Core.Interfaces.Repositories;
 using Infrastructure.Data;
 
 namespace Infrastructure.Repositories;
 
-public class UserRepository(AppDbContext context, UserManager<User> userManager) : RepositoryBase<User>(context), IUserRepository
+public class UserRepository(AppDbContext context, UserManager<User> userManager) : RepositoryBase<User, Guid>(context), IUserRepository
 {
     private readonly UserManager<User> _userManager = userManager;
 

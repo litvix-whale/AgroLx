@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Core.Interfaces;
+using Core.Interfaces.Services;
 using MVC.Models;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 
 namespace MVC.Controllers
 {

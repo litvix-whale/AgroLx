@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Core.Entities;
-using Core.Interfaces;
-using Infrastructure.Repositories;
+using Core.Interfaces.Repositories;
+using Core.Interfaces.Services;
 using Microsoft.AspNetCore.Identity;
 
 namespace Logic.Services

@@ -1,6 +1,6 @@
 using Core.Entities;
 
-namespace Core.Interfaces;
+namespace Core.Interfaces.Repositories;
 
 public interface IOrderRepository: IRepository<Order, Guid>
 {

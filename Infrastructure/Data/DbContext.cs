@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Core.Entities;
-
+using Core.Interfaces;
 namespace Infrastructure.Data;
 
 public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
@@ -13,7 +13,7 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
         var now = DateTime.UtcNow;
 
-        foreach (var entry in ChangeTracker.Entries<EntityBase>())
+        foreach (var entry in ChangeTracker.Entries<IEntityBase>())
         {
             if (entry.State == EntityState.Added)
             {
@@ -23,7 +23,6 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
 
             if (entry.State == EntityState.Modified)
             {
-                // Забороняємо змінювати CreatedAt вручну
                 entry.Property(e => e.CreatedAt).IsModified = false;
 
                 entry.Entity.UpdatedAt = now;
@@ -32,8 +31,10 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
 
         return await base.SaveChangesAsync(cancellationToken);
     }
-    public DbSet<RealEstate> RealEstates { get; set; }
-    public DbSet<ProductImage> RealEstateImages { get; set; }
-
-
+    public DbSet<Product> Products { get; set; }
+    public DbSet<ProductImage> ProductImages { get; set; }
+    public DbSet<Category> Categories { get; set; }
+    public DbSet<Cart> Carts { get; set; }
+    public DbSet<CartItem> CartItems { get; set; }
+    public DbSet<Order> Orders { get; set; }
 }

@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Core.Entities;
 
-namespace Core.Interfaces;
+namespace Core.Interfaces.Services;
 
 public interface IUserService
 {

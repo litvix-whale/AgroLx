@@ -1,7 +1,7 @@
 using Core.Entities;
 using Microsoft.AspNetCore.Identity;
 
-namespace Core.Interfaces;
+namespace Core.Interfaces.Repositories;
 
 public interface IUserRepository : IRepository<User, Guid>
 {
