@@ -2,7 +2,7 @@ using Core.Entities;
 
 namespace Core.Interfaces.Repositories;
 
-public interface ICartRepository: IRepository<Cart, Guid>
+public interface ICartRepository: IRepositoryBase<Cart, Guid>
 {
     Task<Cart?> GetByUserIdAsync(Guid userId);
     Task<Cart?> ClearByIdAsync(Guid cartId);

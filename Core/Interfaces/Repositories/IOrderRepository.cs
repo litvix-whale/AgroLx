@@ -2,7 +2,7 @@ using Core.Entities;
 
 namespace Core.Interfaces.Repositories;
 
-public interface IOrderRepository: IRepository<Order, Guid>
+public interface IOrderRepository: IRepositoryBase<Order, Guid>
 {
     
 }

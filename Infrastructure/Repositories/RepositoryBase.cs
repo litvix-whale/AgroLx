@@ -3,40 +3,34 @@ using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.Repositories;
 
-public abstract class RepositoryBase<TEntity, TId>(AppDbContext context) : IRepository<TEntity, TId> 
+public abstract class RepositoryBase<TEntity, TId>(AppDbContext context) : IRepositoryBase<TEntity, TId> 
     where TEntity : class
     where TId : struct
 {
     protected readonly AppDbContext _context = context;
+    protected readonly DbSet<TEntity> _dbSet= context.Set<TEntity>();
 
-    public virtual async Task<IEnumerable<TEntity>> GetAllAsync()
-    {
-        return await _context.Set<TEntity>().ToListAsync();
-    }
+    public async Task<IEnumerable<TEntity>> GetAllAsync() => await _dbSet.ToListAsync();
 
-    public virtual async Task<TEntity?> GetByIdAsync(TId id)
+    public async Task<TEntity?> GetByIdAsync(TId id) => await _dbSet.FindAsync(id);
+    public async Task AddAsync(TEntity entity)
     {
-        return await _context.Set<TEntity>().FindAsync(id);
-    }
-
-    public virtual async Task AddAsync(TEntity entity)
-    {
-        await _context.Set<TEntity>().AddAsync(entity);
+        await _dbSet.AddAsync(entity);
         await _context.SaveChangesAsync();
     }
 
-    public virtual async Task UpdateAsync(TEntity entity)
+    public async Task UpdateAsync(TEntity entity)
     {
-        _context.Set<TEntity>().Update(entity);
+        _dbSet.Update(entity);
         await _context.SaveChangesAsync();
     }
 
-    public virtual async Task DeleteAsync(TId id)
+    public async Task DeleteAsync(TId id)
     {
         var entity = await GetByIdAsync(id);
         if (entity != null)
         {
-            _context.Set<TEntity>().Remove(entity);
+            _dbSet.Remove(entity);
             await _context.SaveChangesAsync();
         }
     }

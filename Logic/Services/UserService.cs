@@ -2,257 +2,229 @@ using System.Security.Claims;
 using Core.Entities;
 using Core.Interfaces.Repositories;
 using Core.Interfaces.Services;
+using Core.Models;
 using Microsoft.AspNetCore.Identity;
 
-namespace Logic.Services
+namespace Logic.Services;
+
+public class UserService(SignInManager<User> signInManager, UserManager<User> userManager)
 {
-    public class UserService(IUserRepository userRepository, SignInManager<User> signInManager, UserManager<User> userManager) : IUserService
+    private readonly SignInManager<User> _signInManager = signInManager;
+    private readonly UserManager<User> _userManager = userManager;
+
+    public async Task<ServiceResult<User>> RegisterUserAsync(string email, string username, string password,
+        bool rememberMe)
     {
-        private readonly IUserRepository userRepository = userRepository;
-        private readonly SignInManager<User> _signInManager = signInManager;
-        private readonly UserManager<User> _userManager = userManager;
+        var user = new User { UserName = username, Email = email };
+        var result = await _userManager.CreateAsync(user, password);
+        var serviceResult = new ServiceResult<User> { Succeeded = result.Succeeded };
 
-        public async Task<string> RegisterUserAsync(string email, string username, string password, bool rememberMe)
+        if (result.Succeeded)
         {
-            var user = new User { UserName = username, Email = email };
-            var result = await userRepository.AddAsync(user, password);
-            if (result.Succeeded)
-            {
-                await LoginUserAsync(user, password, rememberMe);
-                return "Success";
-            }
-            return string.Join(", ", result.Errors.Select(e => e.Description));
+            await _signInManager.SignInAsync(user, rememberMe);
+            serviceResult.Data = user;
+        }
+        else
+        {
+            serviceResult.Errors = result.Errors.Select(e => e.Description).ToList();
         }
 
-        public async Task<string> LoginUserAsync(string email, string password, bool rememberMe)
+        return serviceResult;
+    }
+
+    public async Task<ServiceResult<User>> LoginUserAsync(string emailOrUsername, string password, bool rememberMe)
+    {
+        var user = await _userManager.FindByEmailAsync(emailOrUsername) ??
+                   await _userManager.FindByNameAsync(emailOrUsername);
+        var serviceResult = new ServiceResult<User>();
+
+        if (user == null)
         {
-            var user = await userRepository.GetByEmailAsync(email) ?? await userRepository.GetByUsernameAsync(email);
-            if (user == null)
-            {
-                return "User not found.";
-            }
-            await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Name, user.UserName!));
-            await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
-            var result = await LoginUserAsync(user, password, rememberMe);
-            if (result.Succeeded)
-            {
-                return "Success";
-            }
+            serviceResult.Succeeded = false;
+            serviceResult.Errors.Add("User not found.");
+
+            return serviceResult;
+        }
+
+        var result = await _signInManager.PasswordSignInAsync(user, password, rememberMe, lockoutOnFailure: false);
+
+        if (result.Succeeded)
+        {
+            serviceResult.Succeeded = true;
+            serviceResult.Data = user;
+        }
+        else
+        {
+            serviceResult.Succeeded = false;
             if (result.IsLockedOut)
-            {
-                return "User is locked out.";
-            }
-            if (result.IsNotAllowed)
-            {
-                return "User is not allowed to sign in.";
-            }
-            if (result.RequiresTwoFactor)
-            {
-                return "Two-factor authentication is required.";
-            }
-            return "Invalid email or password.";
+                serviceResult.Errors.Add("User account is locked out.");
+            else if (result.IsNotAllowed)
+                serviceResult.Errors.Add("User is not allowed to sign in.");
+            else
+                serviceResult.Errors.Add("Invalid credentials.");
         }
 
-        public async Task<string> DeleteUserAsync(string email)
+        return serviceResult;
+    }
+
+    public async Task<ServiceResult<User>> DeleteUserAsync(string email)
+    {
+        var serviceResult = new ServiceResult<User>();
+
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
         {
-            var user = await userRepository.GetByEmailAsync(email);
-            if (user == null)
-            {
-                return "User not found.";
-            }
-            var result = await userRepository.DeleteAsync(user);
-            return result;
+            serviceResult.Succeeded = false;
+            serviceResult.Errors.Add("User not found.");
+
+            return serviceResult;
         }
 
-        public async Task LogoutUserAsync()
+        var result = await _userManager.DeleteAsync(user);
+
+        if (result.Succeeded)
+        {
+            serviceResult.Succeeded = true;
+            serviceResult.Data = user;
+        }
+        else
+        {
+            serviceResult.Succeeded = false;
+            serviceResult.Errors.AddRange(result.Errors.Select(e => e.Description));
+        }
+
+        return serviceResult;
+    }
+
+    public async Task<ServiceResult<List<User>>> GetUsersByRoleAsync(string roleName)
+    {
+        var serviceResult = new ServiceResult<List<User>>();
+
+        var users = await _userManager.GetUsersInRoleAsync(roleName);
+
+        serviceResult.Succeeded = true;
+        serviceResult.Data = users.ToList();
+
+        return serviceResult;
+    }
+
+    public async Task<ServiceResult<User>> GetUserByEmailAsync(string email)
+    {
+        var serviceResult = new ServiceResult<User>();
+
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            serviceResult.Succeeded = false;
+            serviceResult.Errors.Add("User not found.");
+        }
+        else
+        {
+            serviceResult.Succeeded = true;
+            serviceResult.Data = user;
+        }
+
+        return serviceResult;
+    }
+    
+    public async Task<ServiceResult<User>> GetUserByUsernameAsync(string userName)
+    {
+        var serviceResult = new ServiceResult<User>();
+
+        var user = await _userManager.FindByNameAsync(userName);
+        if (user == null)
+        {
+            serviceResult.Succeeded = false;
+            serviceResult.Errors.Add("User not found.");
+        }
+        else
+        {
+            serviceResult.Succeeded = true;
+            serviceResult.Data = user;
+        }
+
+        return serviceResult;
+    }
+    
+    public async Task<ServiceResult<bool>> LogoutUserAsync()
+    {
+        var serviceResult = new ServiceResult<bool>();
+
+        try
         {
             await _signInManager.SignOutAsync();
+            serviceResult.Succeeded = true;
+            serviceResult.Data = true;
         }
-
-        public async Task<IEnumerable<User>> GetUsersByRoleAsync(string role, string? searchTerm = null,
-            string? statusFilter = null, string? sortOrder = null, int? skip = null, int? take = null)
+        catch (Exception ex)
         {
-            return await userRepository.GetByRoleAsync(role, searchTerm, statusFilter, sortOrder, skip, take);
+            serviceResult.Succeeded = false;
+            serviceResult.Data = false;
+            serviceResult.Errors.Add(ex.Message);
         }
 
-        public async Task<int> GetUsersCountByRoleAsync(string role, string? searchTerm = null, string? statusFilter = null)
+        return serviceResult;
+    }
+    
+    public async Task<ServiceResult<User>> UpdateUserProfileAsync(User user, string userName, string profilePicture)
+    {
+        var serviceResult = new ServiceResult<User>();
+
+        user.UserName = userName;
+        user.ProfilePicture = profilePicture;
+
+        var result = await _userManager.UpdateAsync(user);
+
+        if (result.Succeeded)
         {
-            return await userRepository.GetUsersCountByRoleAsync(role, searchTerm, statusFilter);
+            serviceResult.Succeeded = true;
+            serviceResult.Data = user;
         }
-
-        private async Task<SignInResult> LoginUserAsync(User user, string password, bool rememberMe)
+        else
         {
-            if (string.IsNullOrEmpty(user.UserName))
-            {
-                throw new InvalidOperationException("UserName cannot be null or empty.");
-            }
-            return await _signInManager.PasswordSignInAsync(user.UserName, password, rememberMe, lockoutOnFailure: false);
+            serviceResult.Succeeded = false;
+            serviceResult.Errors.AddRange(result.Errors.Select(e => e.Description));
         }
 
-        public async Task<User> GetUserByEmailAsync(string email)
+        return serviceResult;
+    }
+    
+    public async Task<ServiceResult<User>> GetUserByIdAsync(Guid userId)
+    {
+        var serviceResult = new ServiceResult<User>();
+
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
         {
-            return await userRepository.GetByEmailAsync(email) ?? throw new InvalidOperationException("User not found.");
+            serviceResult.Succeeded = false;
+            serviceResult.Errors.Add("User not found.");
         }
-
-        public async Task<User> GetUserByUsernameAsync(string userName)
+        else
         {
-            return await userRepository.GetByUsernameAsync(userName) ?? throw new InvalidOperationException("User not found.");
+            serviceResult.Succeeded = true;
+            serviceResult.Data = user;
         }
 
-        public async Task AddClaimsAsync(User user, IEnumerable<Claim> claims)
+        return serviceResult;
+    }
+    
+    public async Task<ServiceResult<bool>> IsUserAdmin(string userName)
+    {
+        var serviceResult = new ServiceResult<bool>();
+
+        var user = await _userManager.FindByNameAsync(userName);
+        if (user == null)
         {
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            if (claims == null)
-            {
-                throw new ArgumentNullException(nameof(claims));
-            }
-
-            foreach (var claim in claims)
-            {
-                var result = await _userManager.AddClaimAsync(user, claim);
-                if (!result.Succeeded)
-                {
-                    throw new Exception($"Failed to add claim {claim.Type} to user {user.Email}");
-                }
-            }
-        }
-        public async Task RemoveClaimAsync(User user, string claimType)
-        {
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            if (string.IsNullOrEmpty(claimType))
-            {
-                throw new ArgumentNullException(nameof(claimType));
-            }
-
-            var existingClaims = await _userManager.GetClaimsAsync(user);
-
-            var claimToRemove = existingClaims.FirstOrDefault(c => c.Type == claimType);
-            if (claimToRemove != null)
-            {
-                var result = await _userManager.RemoveClaimAsync(user, claimToRemove);
-                if (!result.Succeeded)
-                {
-                    throw new Exception($"Failed to remove claim {claimType} from user {user.Email}");
-                }
-            }
+            serviceResult.Succeeded = false;
+            serviceResult.Data = false;
+            serviceResult.Errors.Add("User not found.");
+            return serviceResult;
         }
 
-        public async Task<User> GetUserByIdAsync(Guid userId)
-        {
-            var user =  await userRepository.GetByIdAsync(userId);
+        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+        serviceResult.Succeeded = true;
+        serviceResult.Data = isAdmin;
 
-            return user!;
-        }
-
-        public async Task<string> GetUsername(User user)
-        {
-            return await _userManager.GetUserNameAsync(user) ?? throw new InvalidOperationException("User not found.");
-        }
-
-        public string GetUserPfp(User user)
-        {
-            return user.ProfilePicture;
-        }
-
-        public async Task<string> UpdateUserProfileAsync(User user, string userName, string profilePicture)
-        {
-            // Validate the profile picture
-            var validProfilePictures = new[]
-            {
-                "pfp_1.png", "pfp_2.png", "pfp_3.png", "pfp_4.png", "pfp_5.png",
-                "pfp_6.png", "pfp_7.png", "pfp_8.png", "pfp_9.png", "pfp_10.png"
-            };
-            
-            if (!validProfilePictures.Contains(profilePicture))
-            {
-                return "Invalid profile picture selected.";
-            }
-            
-            // Store the old username to check if it changed
-            string oldUserName = user.UserName ?? string.Empty;
-            bool usernameChanged = !string.Equals(oldUserName, userName);
-            
-            // Check if username is already taken by another user
-            if (usernameChanged)
-            {
-                var existingUser = await _userManager.FindByNameAsync(userName);
-                if (existingUser != null && existingUser.Id != user.Id)
-                {
-                    return "Username is already taken.";
-                }
-                
-                // Update username
-                user.UserName = userName;
-            }
-            
-            // Update profile picture
-            user.ProfilePicture = profilePicture;
-            
-            // Save changes
-            var result = await _userManager.UpdateAsync(user);
-            
-            if (result.Succeeded)
-            {
-                // Only update claims if username changed
-                if (usernameChanged)
-                {
-                    // Update claims to reflect the new username
-                    var existingClaims = await _userManager.GetClaimsAsync(user);
-                    var nameClaim = existingClaims.FirstOrDefault(c => c.Type == ClaimTypes.Name);
-                    var nameIdentifierClaim = existingClaims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-                    if (nameClaim != null)
-                    {
-                        await _userManager.RemoveClaimAsync(user, nameClaim);
-                        await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Name, userName));
-                    }
-                    else if (nameIdentifierClaim != null)
-                    {
-                        await _userManager.RemoveClaimAsync(user, nameIdentifierClaim);
-                        await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
-                    }
-                    else
-                    {
-                        await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.Name, userName));
-                        await _userManager.AddClaimAsync(user, new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
-                    }
-                    
-                    // Important: Sign in the user again with the new username to refresh the principal
-                    await _signInManager.RefreshSignInAsync(user);
-                }
-                
-                return "Success";
-            }
-            
-            return string.Join(", ", result.Errors.Select(e => e.Description));
-        }
-
-        public async Task<string> GetUserIdByUsername(string userName)
-        {
-            var user = await userRepository.GetByUsernameAsync(userName);
-            if (user == null)
-            {
-                return "User not found.";
-            }
-            return user.Id.ToString();
-        }
-
-        public async Task<bool> IsUserAdmin(string userName)
-        {
-            var user = await userRepository.GetByUsernameAsync(userName);
-            if (user == null)
-            {
-                return false;
-            }
-            var roles = await _userManager.GetRolesAsync(user);
-            return roles.Contains("Admin");
-        }
+        return serviceResult;
     }
 }

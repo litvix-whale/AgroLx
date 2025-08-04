@@ -1,6 +1,6 @@
 namespace Core.Interfaces.Repositories;
 
-public interface IRepository<TEntity, in TId> 
+public interface IRepositoryBase<TEntity, TId> 
     where TEntity : class 
     where TId : struct
 {

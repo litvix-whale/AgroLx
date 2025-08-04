@@ -2,7 +2,7 @@ using Core.Entities;
 
 namespace Core.Interfaces.Repositories;
 
-public interface ICartItemRepository :IRepository<CartItem, int>
+public interface ICartItemRepository :IRepositoryBase<CartItem, int>
 {
     Task<int> GetTotalQuantityInCartAsync(Guid cartId);
 }
