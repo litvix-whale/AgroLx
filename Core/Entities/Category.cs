@@ -9,8 +9,8 @@ public class Category:EntityBase<int>
     public Category? Parent { get; set; }
     
     // many children categories for one parent category
-    public virtual ICollection<Category> Children { get; set; }
+    public virtual ICollection<Category>? Children { get; set; }
 
     // many products for one category
-    public virtual ICollection<Product> Products { get; set; }
+    public virtual ICollection<Product>? Products { get; set; }
 }

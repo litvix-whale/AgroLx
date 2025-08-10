@@ -166,12 +166,11 @@ public class UserService(SignInManager<User> signInManager, UserManager<User> us
         return serviceResult;
     }
     
-    public async Task<ServiceResult<User>> UpdateUserProfileAsync(User user, string userName, string profilePicture)
+    public async Task<ServiceResult<User>> UpdateUserProfileAsync(User user, string userName)
     {
         var serviceResult = new ServiceResult<User>();
 
         user.UserName = userName;
-        user.ProfilePicture = profilePicture;
 
         var result = await _userManager.UpdateAsync(user);
 
